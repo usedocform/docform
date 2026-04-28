@@ -1,0 +1,10 @@
+{
+  "id": "minimal",
+  "name": "Minimal",
+  "version": "0.1.0",
+  "formats": ["pdf", "html"],
+  "defaultOptions": {
+    "pageSize": "A4",
+    "margin": "20mm"
+  }
+}

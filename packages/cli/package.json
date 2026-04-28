@@ -1,0 +1,17 @@
+{
+  "name": "@docform/cli",
+  "version": "0.1.0",
+  "type": "module",
+  "bin": {
+    "docform": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsup src/index.ts --format esm --dts --clean",
+    "dev": "node --conditions development --import tsx src/index.ts"
+  },
+  "dependencies": {
+    "@docform/ai": "workspace:*",
+    "@docform/core": "workspace:*"
+  },
+  "devDependencies": {}
+}
