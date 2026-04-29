@@ -33,3 +33,23 @@ const result = await composeDocument({
 ```
 
 Use the returned `document` with `generateDocumentFromModel` from `@docform/core`.
+
+## Large documents
+
+`composeDocument` automatically switches to a chunked map-reduce flow when `text` is larger than the default threshold. This keeps long inputs, such as multi-page reports, away from provider context limits while preserving the same returned `DocumentModel` shape.
+
+```ts
+const result = await composeDocument({
+  text: longReportText,
+  instruction: "summarize and format as an office report",
+  template: "minimal",
+  provider,
+  largeDocument: {
+    threshold: 24_000,
+    chunkSize: 12_000,
+    chunkOverlap: 800
+  }
+});
+```
+
+No extra runtime dependencies are required for large-document handling.

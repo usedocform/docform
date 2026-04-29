@@ -1,9 +1,11 @@
 export {
   composeDocument,
   type ComposeDocumentInput,
-  type ComposeDocumentResult
+  type ComposeDocumentResult,
+  type LargeDocumentOptions
 } from "./composer/compose-document.js";
 export { buildComposePrompt } from "./composer/build-compose-prompt.js";
+export { splitTextIntoChunks, type TextChunk, type SplitTextIntoChunksOptions } from "./composer/split-text-into-chunks.js";
 export type { AiComposedDocument, AiTokenUsage } from "./composer/compose-types.js";
 export { AiOutputValidationError, validateAiOutput } from "./guardrails/validate-ai-output.js";
 export { enforceDocumentLimits, type DocumentLimits } from "./guardrails/enforce-document-limits.js";
