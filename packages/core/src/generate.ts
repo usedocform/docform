@@ -4,7 +4,7 @@ import { parseMarkdown } from "./input/markdown.js";
 import { renderHtml } from "./renderers/html.js";
 import { renderPdf } from "./renderers/pdf.js";
 import { TemplateRegistry } from "./templates/registry.js";
-import { assertRequiredPath, assertSupportedFormat, assertValidDocumentModel } from "./validation.js";
+import { assertRequiredPath, assertSupportedFormat, assertValidDocumentModel, type OutputFormat } from "./validation.js";
 
 export type GenerateDocumentOptions = {
   inputPath: string;
@@ -22,12 +22,17 @@ export type GenerateDocumentFromModelOptions = {
   templatesRoot: string;
 };
 
+type ValidatedGenerateDocumentFromModelOptions = Omit<GenerateDocumentFromModelOptions, "format"> & {
+  format: OutputFormat;
+};
+
 export async function generateDocument(options: GenerateDocumentOptions): Promise<void> {
   assertRequiredPath(options.inputPath, "inputPath");
   assertRequiredPath(options.outputPath, "outputPath");
   assertRequiredPath(options.templateId, "templateId");
   assertRequiredPath(options.templatesRoot, "templatesRoot");
-  assertSupportedFormat(options.format);
+  const format = options.format;
+  assertSupportedFormat(format);
 
   const markdown = await readFile(options.inputPath, "utf8");
   const model = parseMarkdown(markdown);
@@ -35,7 +40,7 @@ export async function generateDocument(options: GenerateDocumentOptions): Promis
     model,
     outputPath: options.outputPath,
     templateId: options.templateId,
-    format: options.format,
+    format,
     templatesRoot: options.templatesRoot
   });
 }
@@ -44,13 +49,14 @@ export async function generateDocumentFromModel(options: GenerateDocumentFromMod
   assertRequiredPath(options.outputPath, "outputPath");
   assertRequiredPath(options.templateId, "templateId");
   assertRequiredPath(options.templatesRoot, "templatesRoot");
-  assertSupportedFormat(options.format);
+  const format = options.format;
+  assertSupportedFormat(format);
   assertValidDocumentModel(options.model);
 
-  await renderDocumentModel(options);
+  await renderDocumentModel({ ...options, format });
 }
 
-async function renderDocumentModel(options: GenerateDocumentFromModelOptions): Promise<void> {
+async function renderDocumentModel(options: ValidatedGenerateDocumentFromModelOptions): Promise<void> {
   assertValidDocumentModel(options.model);
 
   const registry = new TemplateRegistry(options.templatesRoot);
