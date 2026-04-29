@@ -1,6 +1,6 @@
 {
   "name": "@docform/cli",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Command-line interface for generating PDF documents with DocForm.",
   "type": "module",
   "keywords": [
@@ -18,7 +18,7 @@
     "dev": "node --conditions development --import tsx src/index.ts"
   },
   "dependencies": {
-    "@docform/ai": "workspace:*",
+    "@docform/ai": "workspace:^0.2.0",
     "@docform/core": "workspace:*"
   },
   "devDependencies": {}
