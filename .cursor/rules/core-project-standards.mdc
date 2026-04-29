@@ -1,0 +1,15 @@
+---
+description: Core project boundaries and engineering standards for DocForm
+alwaysApply: true
+---
+
+# DocForm Project Standards
+
+- Keep `usedocform/docform` useful as an open-source local product. Do not add dependencies on private cloud, premium, billing, or enterprise code.
+- Keep package boundaries clear: `packages/core` owns document model, validation, template registry, and renderers; `packages/ai` owns AI composition and provider abstraction; `packages/cli` parses CLI args and calls public package APIs.
+- Export public APIs through package entrypoints such as `src/index.ts`. Avoid reaching into another package's internal files.
+- Prefer the smallest implementation that satisfies the current behavior. Do not add speculative plugin systems, config layers, or compatibility shims for unshipped branch work.
+- Validate external inputs at package boundaries. AI-generated content must pass guardrails before it becomes a `DocumentModel`.
+- Do not edit generated output by hand: `dist/`, `output/`, `node_modules/`, generated PDFs, and build artifacts are not source.
+- Do not commit secrets, `.env` files, API keys, private templates, or cloud-only credentials.
+
