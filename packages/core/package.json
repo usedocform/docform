@@ -1,7 +1,15 @@
 {
   "name": "@docform/core",
   "version": "0.1.0",
+  "description": "Core Markdown, template, HTML, and PDF rendering pipeline for DocForm.",
   "type": "module",
+  "keywords": [
+    "docform",
+    "pdf",
+    "markdown",
+    "templates",
+    "document-generation"
+  ],
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",

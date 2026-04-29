@@ -1,7 +1,15 @@
 {
   "name": "@docform/cli",
   "version": "0.1.0",
+  "description": "Command-line interface for generating PDF documents with DocForm.",
   "type": "module",
+  "keywords": [
+    "docform",
+    "cli",
+    "pdf",
+    "markdown",
+    "document-generation"
+  ],
   "bin": {
     "docform": "./dist/index.js"
   },
