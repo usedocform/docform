@@ -1,0 +1,15 @@
+{
+  "name": "@docform/api",
+  "version": "0.2.0",
+  "description": "Local REST API for DocForm document generation.",
+  "type": "module",
+  "scripts": {
+    "build": "tsup src/index.ts --format esm --dts --clean",
+    "dev": "node --conditions development --import tsx src/index.ts",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@docform/core": "workspace:*",
+    "fastify": "^5.8.5"
+  }
+}

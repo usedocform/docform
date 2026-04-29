@@ -1,6 +1,6 @@
 # DocForm
 
-DocForm 0.1 is a local walking skeleton for generating PDF documents from Markdown.
+DocForm is a local document generation toolkit for turning Markdown into PDF documents through a core package, CLI, and local API.
 
 ## What Is Included In 0.1
 
@@ -14,6 +14,16 @@ DocForm 0.1 is a local walking skeleton for generating PDF documents from Markdo
 - Smoke test that verifies a non-empty PDF is created.
 
 REST API, MCP, DOCX, Docker, cloud mode, auth, async jobs, premium templates, and dashboard are intentionally outside the 0.1 scope.
+
+## What Is Included In 0.2
+
+- Local REST API in `apps/api` powered by Fastify.
+- `POST /v1/documents/generate` for Markdown to PDF.
+- `POST /v1/documents/preview` for Markdown to HTML preview.
+- `GET /v1/templates` and `GET /v1/templates/{id}`.
+- Docker dev setup with Playwright/Chromium.
+
+MCP, DOCX, cloud mode, auth, async jobs, premium templates, billing, and dashboard remain outside the 0.2 scope.
 
 ## Quick Start
 
@@ -62,6 +72,49 @@ With `npm exec`, the same command is:
 
 ```bash
 npm exec --yes pnpm@10.33.2 -- --filter @docform/cli dev -- generate --input examples/markdown/report.md --template minimal --format pdf --output output/report.pdf
+```
+
+## Local API
+
+Run the API:
+
+```bash
+pnpm api
+```
+
+Generate a PDF through the API:
+
+```bash
+curl -X POST http://localhost:3000/v1/documents/generate \
+  -H "content-type: application/json" \
+  -d '{
+    "format": "pdf",
+    "template": "minimal",
+    "content_markdown": "# API Report\n\nGenerated from the local API."
+  }'
+```
+
+Generate an HTML preview:
+
+```bash
+curl -X POST http://localhost:3000/v1/documents/preview \
+  -H "content-type: application/json" \
+  -d '{
+    "template": "minimal",
+    "content_markdown": "# Preview\n\nGenerated from the local API."
+  }'
+```
+
+List templates:
+
+```bash
+curl http://localhost:3000/v1/templates
+```
+
+Run the API with Docker dev:
+
+```bash
+pnpm api:docker
 ```
 
 ## AI Generation From CLI

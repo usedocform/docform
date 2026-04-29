@@ -1,0 +1,12 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: infra/docker/dev/Dockerfile
+    environment:
+      PORT: "3000"
+      DOCFORM_OUTPUT_ROOT: /app/output
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./output:/app/output
