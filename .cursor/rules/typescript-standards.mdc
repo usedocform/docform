@@ -1,0 +1,17 @@
+---
+description: TypeScript standards for DocForm packages
+globs: **/*.ts
+alwaysApply: false
+---
+
+# TypeScript Standards
+
+- Follow the existing strict TypeScript style. Keep public function return types explicit, especially exported and async functions.
+- This repo uses ESM with `moduleResolution: NodeNext`; keep local relative imports using `.js` file extensions in TypeScript source.
+- Use `type` for data shapes and unions. Use `interface` only when extension or declaration merging is intentional.
+- Avoid `any`. If an external boundary is untyped, narrow it immediately with validation or a small parsing function.
+- Prefer pure functions for transforming Markdown, AI output, templates, and `DocumentModel` values.
+- Keep CLI code thin: parse flags, validate required values, resolve paths, then call `@docform/core` or `@docform/ai`.
+- When adding public package behavior, export it from the package `src/index.ts` and cover the observable behavior with tests.
+- Match the existing formatting style: double quotes, two-space indentation, trailing commas omitted unless already required by surrounding code.
+
