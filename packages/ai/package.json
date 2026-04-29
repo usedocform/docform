@@ -1,7 +1,15 @@
 {
   "name": "@docform/ai",
   "version": "0.1.0",
+  "description": "AI composition utilities for DocForm document generation.",
   "type": "module",
+  "keywords": [
+    "docform",
+    "ai",
+    "llm",
+    "pdf",
+    "document-generation"
+  ],
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
