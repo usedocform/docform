@@ -3,6 +3,7 @@
   "version": "0.3.0",
   "description": "Local MCP server for DocForm document generation.",
   "type": "module",
+  "license": "Apache-2.0",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {

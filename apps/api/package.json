@@ -3,6 +3,7 @@
   "version": "0.2.0",
   "description": "Local REST API for DocForm document generation.",
   "type": "module",
+  "license": "Apache-2.0",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {

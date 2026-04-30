@@ -1,8 +1,9 @@
 {
   "name": "@docform/ai",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "AI composition utilities for DocForm document generation.",
   "type": "module",
+  "license": "Apache-2.0",
   "keywords": [
     "docform",
     "ai",

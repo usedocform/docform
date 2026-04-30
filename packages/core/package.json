@@ -1,8 +1,9 @@
 {
   "name": "@docform/core",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Core Markdown, template, HTML, PDF, and DOCX rendering pipeline for DocForm.",
   "type": "module",
+  "license": "Apache-2.0",
   "keywords": [
     "docform",
     "pdf",
