@@ -13,7 +13,9 @@
     "types": ["node", "vitest/globals"],
     "paths": {
       "@docform/core": ["./packages/core/src/index.ts"],
-      "@docform/ai": ["./packages/ai/src/index.ts"]
+      "@docform/ai": ["./packages/ai/src/index.ts"],
+      "@docform/api": ["./apps/api/src/index.ts"],
+      "@docform/mcp-server": ["./apps/mcp-server/src/index.ts"]
     }
   },
   "include": ["apps/**/*.ts", "packages/**/*.ts", "vitest.config.ts"]

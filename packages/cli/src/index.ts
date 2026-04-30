@@ -2,7 +2,9 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { composeDocument, createAiProvider, type AiProviderName } from "@docform/ai";
+import { createApiServer } from "@docform/api";
 import { generateDocument, generateDocumentFromModel } from "@docform/core";
+import { startMcpServer } from "@docform/mcp-server";
 
 type GenerateArgs = {
   input?: string;
@@ -19,6 +21,18 @@ type GenerateArgs = {
   aiStyle?: string;
 };
 
+type ServeArgs = {
+  host: string;
+  port: number;
+  templatesRoot?: string;
+  outputRoot?: string;
+};
+
+type McpArgs = {
+  templatesRoot?: string;
+  outputRoot?: string;
+};
+
 async function main(argv: string[]): Promise<void> {
   const normalizedArgv = argv[0] === "--" ? argv.slice(1) : argv;
   const [command, ...rest] = normalizedArgv;
@@ -28,11 +42,35 @@ async function main(argv: string[]): Promise<void> {
     return;
   }
 
-  if (command !== "generate") {
-    throw new Error(`Unknown command "${command}".`);
+  switch (command) {
+    case "generate":
+      if (isHelp(rest)) {
+        printGenerateHelp();
+        return;
+      }
+      await runGenerate(rest);
+      return;
+    case "serve":
+      if (isHelp(rest)) {
+        printServeHelp();
+        return;
+      }
+      await runServe(rest);
+      return;
+    case "mcp":
+      if (isHelp(rest)) {
+        printMcpHelp();
+        return;
+      }
+      await runMcp(rest);
+      return;
+    default:
+      throw new Error(`Unknown command "${command}".`);
   }
+}
 
-  const args = parseGenerateArgs(rest);
+async function runGenerate(argv: string[]): Promise<void> {
+  const args = parseGenerateArgs(argv);
   if (!args.input || !args.output) {
     throw new Error("Both --input and --output are required.");
   }
@@ -80,6 +118,29 @@ async function main(argv: string[]): Promise<void> {
   }
 
   console.log(`Created ${args.output}`);
+}
+
+async function runServe(argv: string[]): Promise<void> {
+  const args = parseServeArgs(argv);
+  const cwd = process.env.INIT_CWD ?? process.cwd();
+  const server = createApiServer({
+    cwd,
+    templatesRoot: args.templatesRoot,
+    outputRoot: args.outputRoot
+  });
+
+  const address = await server.listen({ port: args.port, host: args.host });
+  console.log(`DocForm API listening on ${address}`);
+}
+
+async function runMcp(argv: string[]): Promise<void> {
+  const args = parseMcpArgs(argv);
+  const cwd = process.env.INIT_CWD ?? process.cwd();
+  await startMcpServer({
+    cwd,
+    templatesRoot: args.templatesRoot,
+    outputRoot: args.outputRoot
+  });
 }
 
 function parseGenerateArgs(argv: string[]): GenerateArgs {
@@ -152,6 +213,75 @@ function parseGenerateArgs(argv: string[]): GenerateArgs {
   return args;
 }
 
+function parseServeArgs(argv: string[]): ServeArgs {
+  const args: ServeArgs = {
+    host: process.env.HOST ?? "0.0.0.0",
+    port: Number.parseInt(process.env.PORT ?? "3000", 10)
+  };
+
+  for (let index = 0; index < argv.length; index += 1) {
+    const flag = argv[index];
+
+    if (!flag?.startsWith("--")) {
+      throw new Error(`Unexpected argument "${flag}".`);
+    }
+
+    switch (flag) {
+      case "--host":
+        args.host = readFlagValue(argv, index, flag);
+        index += 1;
+        break;
+      case "--port":
+        args.port = parsePort(readFlagValue(argv, index, flag));
+        index += 1;
+        break;
+      case "--templates-root":
+        args.templatesRoot = readFlagValue(argv, index, flag);
+        index += 1;
+        break;
+      case "--output-root":
+        args.outputRoot = readFlagValue(argv, index, flag);
+        index += 1;
+        break;
+      default:
+        throw new Error(`Unknown option "${flag}".`);
+    }
+  }
+
+  if (!Number.isInteger(args.port) || args.port <= 0 || args.port > 65535) {
+    throw new Error("--port must be an integer between 1 and 65535.");
+  }
+
+  return args;
+}
+
+function parseMcpArgs(argv: string[]): McpArgs {
+  const args: McpArgs = {};
+
+  for (let index = 0; index < argv.length; index += 1) {
+    const flag = argv[index];
+
+    if (!flag?.startsWith("--")) {
+      throw new Error(`Unexpected argument "${flag}".`);
+    }
+
+    switch (flag) {
+      case "--templates-root":
+        args.templatesRoot = readFlagValue(argv, index, flag);
+        index += 1;
+        break;
+      case "--output-root":
+        args.outputRoot = readFlagValue(argv, index, flag);
+        index += 1;
+        break;
+      default:
+        throw new Error(`Unknown option "${flag}".`);
+    }
+  }
+
+  return args;
+}
+
 function readFlagValue(argv: string[], index: number, flag: string): string {
   const value = argv[index + 1];
   if (!value || value.startsWith("--")) {
@@ -159,6 +289,15 @@ function readFlagValue(argv: string[], index: number, flag: string): string {
   }
 
   return value;
+}
+
+function parsePort(value: string): number {
+  const port = Number.parseInt(value, 10);
+  if (!Number.isInteger(port) || String(port) !== value.trim()) {
+    throw new Error("--port must be an integer between 1 and 65535.");
+  }
+
+  return port;
 }
 
 function parseAiProvider(value: string): AiProviderName {
@@ -169,18 +308,41 @@ function parseAiProvider(value: string): AiProviderName {
   throw new Error(`Unsupported AI provider "${value}".`);
 }
 
+function isHelp(argv: string[]): boolean {
+  return argv.length === 1 && (argv[0] === "--help" || argv[0] === "-h");
+}
+
 function printHelp(): void {
-  console.log(`DocForm 0.1
+  console.log(`DocForm 0.3
 
 Usage:
   docform generate --input examples/markdown/report.md --template minimal --format pdf --output output/report.pdf
+  docform generate --input examples/markdown/report.md --template minimal --format docx --output output/report.docx
+  docform serve --port 3000
+  docform mcp
   docform generate --input raw.txt --ai-instruction "make it office style" --ai-provider openai-compatible --ai-model gpt-4.1-mini --output output/report.pdf
+
+Commands:
+  generate          Generate a PDF or DOCX from Markdown.
+  serve             Start the local REST API.
+  mcp               Start the local MCP server over stdio.
+
+Run "docform <command> --help" for command options.
+`);
+}
+
+function printGenerateHelp(): void {
+  console.log(`DocForm generate
+
+Usage:
+  docform generate --input examples/markdown/report.md --template minimal --format pdf --output output/report.pdf
+  docform generate --input examples/markdown/report.md --template minimal --format docx --output output/report.docx
 
 Options:
   --input            Path to a Markdown file.
-  --output           Path where the generated PDF will be saved.
+  --output           Path where the generated document will be saved.
   --template         Template id. Defaults to "minimal".
-  --format           Output format. DocForm 0.1 supports only "pdf".
+  --format           Output format: pdf or docx. Defaults to "pdf".
   --templates-root   Templates directory. Defaults to packages/templates-basic/templates.
   --ai               Enable AI composition for the input text.
   --ai-instruction   Instruction for AI composition, for example "make it office style".
@@ -192,6 +354,32 @@ Options:
 
 Environment:
   DOCFORM_AI_PROVIDER, DOCFORM_AI_MODEL, DOCFORM_AI_BASE_URL, DOCFORM_AI_API_KEY
+`);
+}
+
+function printServeHelp(): void {
+  console.log(`DocForm serve
+
+Usage:
+  docform serve --host 0.0.0.0 --port 3000
+
+Options:
+  --host             API bind host. Defaults to HOST or 0.0.0.0.
+  --port             API port. Defaults to PORT or 3000.
+  --templates-root   Templates directory. Defaults to packages/templates-basic/templates.
+  --output-root      Output directory. Defaults to output.
+`);
+}
+
+function printMcpHelp(): void {
+  console.log(`DocForm mcp
+
+Usage:
+  docform mcp
+
+Options:
+  --templates-root   Templates directory. Defaults to DOCFORM_TEMPLATES_ROOT or packages/templates-basic/templates.
+  --output-root      Output directory. Defaults to DOCFORM_OUTPUT_ROOT or output.
 `);
 }
 

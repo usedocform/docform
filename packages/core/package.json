@@ -1,7 +1,7 @@
 {
   "name": "@docform/core",
-  "version": "0.1.0",
-  "description": "Core Markdown, template, HTML, and PDF rendering pipeline for DocForm.",
+  "version": "0.3.0",
+  "description": "Core Markdown, template, HTML, PDF, and DOCX rendering pipeline for DocForm.",
   "type": "module",
   "keywords": [
     "docform",
@@ -26,6 +26,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "docx": "^9.6.1",
     "playwright": "^1.59.1"
   }
 }
