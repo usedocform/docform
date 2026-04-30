@@ -1,106 +1,109 @@
 # DocForm
 
-DocForm is a local document generation toolkit for turning Markdown into PDF and DOCX documents through a core package, CLI, local API, and local MCP server.
+Turn Markdown and AI-written text into clean PDF, DOCX, and HTML documents.
 
-## What Is Included In 0.1
+DocForm is a local-first document generation toolkit for developers, AI agents, and self-hosted apps. Write content in Markdown, choose a template, and get a ready-to-share business document without hand-tuning HTML, CSS, Word files, or browser rendering.
 
-- TypeScript monorepo with `packages/core`, `packages/ai`, `packages/cli`, and `packages/templates-basic`.
-- Markdown to normalized `DocumentModel`.
-- `DocumentModel` to HTML.
-- HTML to PDF through Playwright/Chromium.
-- Optional AI composition from raw text and an instruction into `DocumentModel`.
-- One built-in template: `minimal`.
-- CLI command: `docform generate`.
-- Smoke test that verifies a non-empty PDF is created.
+## Why DocForm?
 
-REST API, MCP, DOCX, Docker, cloud mode, auth, async jobs, premium templates, and dashboard are intentionally outside the 0.1 scope.
+Most apps eventually need the same thing: a polished report, proposal, invoice, summary, or internal document generated from structured data or text. DocForm gives you one generation path that works from the command line, a local REST API, and an MCP server for AI tools.
 
-## What Is Included In 0.2
+Use it when you want to:
 
-- Local REST API in `apps/api` powered by Fastify.
-- `POST /v1/documents/generate` for Markdown to PDF.
-- `POST /v1/documents/preview` for Markdown to HTML preview.
-- `GET /v1/templates` and `GET /v1/templates/{id}`.
-- Docker dev setup with Playwright/Chromium.
+- generate PDF or DOCX files from Markdown;
+- preview a document as HTML before exporting it;
+- let an AI agent create files through MCP;
+- run document generation locally without a hosted service;
+- build your own document workflow on top of a reusable TypeScript core.
 
-MCP, DOCX, cloud mode, auth, async jobs, premium templates, billing, and dashboard remain outside the 0.2 scope.
+The current open-source MVP includes CLI generation, a local Fastify API, a local MCP server, DOCX export, PDF rendering through Playwright/Chromium, and the built-in `minimal` template.
 
-## What Is Included In 0.3
+## Install From npm
 
-- DOCX renderer in `packages/core` using the normalized `DocumentModel`.
-- `format: "docx"` support in the CLI and local REST API.
-- Local MCP server in `apps/mcp-server`.
-- MCP tools: `generate_document`, `preview_document`, `list_templates`, and `get_template`.
-- Unified CLI entrypoints: `docform generate`, `docform serve`, and `docform mcp`.
+Install the CLI globally:
 
-Cloud mode, auth, async jobs, billing, dashboard, and premium templates remain outside the 0.3 scope.
+```bash
+npm install -g @docform/cli
+```
 
-## Quick Start
+Then generate a document:
 
-This repository uses `pnpm@10.33.2`. The recommended way to make the `pnpm`
-command available is Corepack:
+```bash
+docform generate \
+  --input report.md \
+  --template minimal \
+  --format pdf \
+  --output output/report.pdf
+```
+
+For DOCX output, change the format:
+
+```bash
+docform generate \
+  --input report.md \
+  --template minimal \
+  --format docx \
+  --output output/report.docx
+```
+
+DocForm uses Playwright/Chromium for PDF rendering. If Chromium is not installed yet, install it once:
+
+```bash
+npx playwright install chromium
+```
+
+You can also use the core package directly in your own app:
+
+```bash
+npm install @docform/core
+```
+
+## Quick Start From Source
+
+This repository uses `pnpm@10.33.2`. Enable Corepack, install dependencies, and install Chromium:
 
 ```bash
 corepack enable
 corepack prepare pnpm@10.33.2 --activate
 pnpm install
-```
-
-If Corepack is not available, install `pnpm` globally with npm:
-
-```bash
-npm install -g pnpm
-pnpm install
-```
-
-You can also run the project without installing `pnpm` globally. `npm exec`
-downloads and runs `pnpm` only for that command:
-
-```bash
-npm exec --yes pnpm@10.33.2 -- install
-```
-
-Install the Chromium browser used by Playwright:
-
-```bash
 pnpm --filter @docform/core exec playwright install chromium
-```
-
-With `npm exec`, the same command is:
-
-```bash
-npm exec --yes pnpm@10.33.2 -- --filter @docform/core exec playwright install chromium
 ```
 
 Generate the example PDF:
 
 ```bash
-pnpm --filter @docform/cli dev -- generate --input examples/markdown/report.md --template minimal --format pdf --output output/report.pdf
+pnpm --filter @docform/cli dev -- generate \
+  --input examples/markdown/report.md \
+  --template minimal \
+  --format pdf \
+  --output output/report.pdf
 ```
 
 Generate the example DOCX:
 
 ```bash
-pnpm --filter @docform/cli dev -- generate --input examples/markdown/report.md --template minimal --format docx --output output/report.docx
+pnpm --filter @docform/cli dev -- generate \
+  --input examples/markdown/report.md \
+  --template minimal \
+  --format docx \
+  --output output/report.docx
 ```
 
-With `npm exec`, the same command is:
+## Local REST API
+
+Run DocForm as a local API:
 
 ```bash
-npm exec --yes pnpm@10.33.2 -- --filter @docform/cli dev -- generate --input examples/markdown/report.md --template minimal --format pdf --output output/report.pdf
+docform serve --port 3000
 ```
 
-## Local API
-
-Run the API:
+In the source workspace, use:
 
 ```bash
 pnpm --filter @docform/cli dev -- serve --port 3000
 ```
 
-The package-level development shortcut `pnpm api` is still available.
-
-Generate a PDF or DOCX through the API:
+Generate a PDF or DOCX:
 
 ```bash
 curl -X POST http://localhost:3000/v1/documents/generate \
@@ -108,30 +111,30 @@ curl -X POST http://localhost:3000/v1/documents/generate \
   -d '{
     "format": "pdf",
     "template": "minimal",
-    "content_markdown": "# API Report\n\nGenerated from the local API."
+    "content_markdown": "# Sales Report\n\nRevenue grew by 18% this quarter."
   }'
 ```
 
-Use `"format": "docx"` to create a DOCX file through the same endpoint.
+Use `"format": "docx"` to create a Word document through the same endpoint.
 
-Generate an HTML preview:
+Create an HTML preview:
 
 ```bash
 curl -X POST http://localhost:3000/v1/documents/preview \
   -H "content-type: application/json" \
   -d '{
     "template": "minimal",
-    "content_markdown": "# Preview\n\nGenerated from the local API."
+    "content_markdown": "# Preview\n\nCheck the document before exporting."
   }'
 ```
 
-List templates:
+List available templates:
 
 ```bash
 curl http://localhost:3000/v1/templates
 ```
 
-Run the API with Docker dev:
+For Docker-based local development:
 
 ```bash
 pnpm api:docker
@@ -139,44 +142,46 @@ pnpm api:docker
 
 ## Local MCP Server
 
-Run the local MCP server over stdio:
+DocForm can run as a local MCP server so AI clients can create documents as tools.
+
+```bash
+docform mcp
+```
+
+In the source workspace, use:
 
 ```bash
 pnpm --filter @docform/cli dev -- mcp
 ```
 
-The package-level development shortcut `pnpm mcp` is still available.
-
-Available tools:
+Available MCP tools:
 
 - `generate_document`: creates a local PDF or DOCX from Markdown.
-- `preview_document`: returns HTML preview from Markdown.
-- `list_templates`: lists templates from the existing registry.
+- `preview_document`: returns an HTML preview.
+- `list_templates`: lists available templates.
 - `get_template`: returns metadata for one template.
 
-Example `generate_document` tool input:
+Example `generate_document` input:
 
 ```json
 {
   "format": "docx",
   "template": "minimal",
-  "content_markdown": "# MCP Report\n\nGenerated locally."
+  "content_markdown": "# Proposal\n\nGenerated locally by an AI agent."
 }
 ```
 
-Set `DOCFORM_TEMPLATES_ROOT` or `DOCFORM_OUTPUT_ROOT` when you need non-default local paths.
+Set `DOCFORM_TEMPLATES_ROOT` or `DOCFORM_OUTPUT_ROOT` when you need custom local paths.
 
-## AI Generation From CLI
+## Optional AI Composition
 
-AI generation is optional. Without AI flags, `docform generate` keeps using the regular Markdown pipeline.
-
-Use `--ai-instruction` to ask DocForm to transform raw text before rendering:
+DocForm can optionally ask an AI provider to transform raw text before rendering. Without AI flags, `docform generate` uses the regular Markdown pipeline.
 
 ```bash
 DOCFORM_AI_API_KEY=your-api-key \
-pnpm --filter @docform/cli dev -- generate \
-  --input examples/markdown/report.md \
-  --ai-instruction "make it office style" \
+docform generate \
+  --input report.md \
+  --ai-instruction "make it concise and business-ready" \
   --ai-provider openai-compatible \
   --ai-model gpt-4.1-mini \
   --ai-base-url https://api.openai.com/v1 \
@@ -185,34 +190,13 @@ pnpm --filter @docform/cli dev -- generate \
   --output output/ai-report.pdf
 ```
 
-Supported AI providers:
+Supported providers:
 
-- `openai-compatible`: works with OpenAI-compatible HTTP APIs. Configure it with `--ai-model`, `--ai-base-url`, and `DOCFORM_AI_API_KEY`.
-- `ollama`: local provider for Ollama. Use `--ai-base-url http://localhost:11434` and an Ollama model name.
-- `mock`: test provider that does not call a real AI service.
+- `openai-compatible`: any OpenAI-compatible HTTP API.
+- `ollama`: local Ollama models for privacy-first workflows.
+- `mock`: deterministic test provider that does not call a real AI service.
 
-You can pass AI settings as CLI flags or environment variables:
-
-```bash
-DOCFORM_AI_PROVIDER=openai-compatible
-DOCFORM_AI_MODEL=gpt-4.1-mini
-DOCFORM_AI_BASE_URL=https://api.openai.com/v1
-DOCFORM_AI_API_KEY=your-api-key
-```
-
-CLI flags take priority over environment variables:
-
-```bash
---ai
---ai-instruction "make it office style"
---ai-provider openai-compatible
---ai-model gpt-4.1-mini
---ai-base-url https://api.openai.com/v1
---ai-api-key your-api-key
---ai-style office
-```
-
-For local smoke testing without an API key:
+For local testing without an API key:
 
 ```bash
 pnpm --filter @docform/cli dev -- generate \
@@ -224,24 +208,24 @@ pnpm --filter @docform/cli dev -- generate \
   --output output/mock-ai-report.pdf
 ```
 
-## Definition Of Done
+## What Is Included
 
-The local 0.3 MVP is ready when these commands create valid, non-empty PDF and DOCX files:
+DocForm currently includes:
 
-```bash
-docform generate --input examples/markdown/report.md --template minimal --format pdf --output output/report.pdf
-docform generate --input examples/markdown/report.md --template minimal --format docx --output output/report.docx
-```
+- TypeScript monorepo with shared core, CLI, API, MCP server, templates, and optional AI package.
+- Markdown to normalized `DocumentModel`.
+- `DocumentModel` to HTML preview, PDF, and DOCX.
+- PDF rendering through Playwright/Chromium.
+- Local REST API: generate, preview, and templates endpoints.
+- Local MCP server over stdio.
+- Built-in `minimal` template.
+- Smoke, API, and MCP tests for the main generation flows.
 
-For local development, the equivalent workspace command is:
-
-```bash
-pnpm --filter @docform/cli dev -- generate --input examples/markdown/report.md --template minimal --format pdf --output output/report.pdf
-```
+Not included yet: hosted cloud mode, auth, async jobs, billing, dashboard, long-term cloud storage, and premium templates.
 
 ## Development
 
-Run all tests:
+Run tests:
 
 ```bash
 pnpm test
@@ -258,3 +242,7 @@ Build packages:
 ```bash
 pnpm build
 ```
+
+## License
+
+DocForm is licensed under the Apache License 2.0. See [LICENSE](LICENSE) for details.
