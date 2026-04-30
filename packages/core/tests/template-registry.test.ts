@@ -12,6 +12,7 @@ describe("TemplateRegistry", () => {
 
     expect(template.manifest.id).toBe("minimal");
     expect(template.manifest.formats).toContain("pdf");
+    expect(template.manifest.formats).toContain("docx");
     expect(template.styles).toContain(".docform-document");
   });
 

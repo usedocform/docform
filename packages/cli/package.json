@@ -1,7 +1,7 @@
 {
   "name": "@docform/cli",
-  "version": "0.1.1",
-  "description": "Command-line interface for generating PDF documents with DocForm.",
+  "version": "0.3.0",
+  "description": "Command-line interface for generating PDF and DOCX documents with DocForm.",
   "type": "module",
   "keywords": [
     "docform",
@@ -19,7 +19,8 @@
   },
   "dependencies": {
     "@docform/ai": "workspace:^0.2.0",
-    "@docform/core": "workspace:*"
-  },
-  "devDependencies": {}
+    "@docform/api": "workspace:*",
+    "@docform/core": "workspace:*",
+    "@docform/mcp-server": "workspace:*"
+  }
 }

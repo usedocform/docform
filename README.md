@@ -1,6 +1,6 @@
 # DocForm
 
-DocForm is a local document generation toolkit for turning Markdown into PDF documents through a core package, CLI, and local API.
+DocForm is a local document generation toolkit for turning Markdown into PDF and DOCX documents through a core package, CLI, local API, and local MCP server.
 
 ## What Is Included In 0.1
 
@@ -24,6 +24,16 @@ REST API, MCP, DOCX, Docker, cloud mode, auth, async jobs, premium templates, an
 - Docker dev setup with Playwright/Chromium.
 
 MCP, DOCX, cloud mode, auth, async jobs, premium templates, billing, and dashboard remain outside the 0.2 scope.
+
+## What Is Included In 0.3
+
+- DOCX renderer in `packages/core` using the normalized `DocumentModel`.
+- `format: "docx"` support in the CLI and local REST API.
+- Local MCP server in `apps/mcp-server`.
+- MCP tools: `generate_document`, `preview_document`, `list_templates`, and `get_template`.
+- Unified CLI entrypoints: `docform generate`, `docform serve`, and `docform mcp`.
+
+Cloud mode, auth, async jobs, billing, dashboard, and premium templates remain outside the 0.3 scope.
 
 ## Quick Start
 
@@ -68,6 +78,12 @@ Generate the example PDF:
 pnpm --filter @docform/cli dev -- generate --input examples/markdown/report.md --template minimal --format pdf --output output/report.pdf
 ```
 
+Generate the example DOCX:
+
+```bash
+pnpm --filter @docform/cli dev -- generate --input examples/markdown/report.md --template minimal --format docx --output output/report.docx
+```
+
 With `npm exec`, the same command is:
 
 ```bash
@@ -79,10 +95,12 @@ npm exec --yes pnpm@10.33.2 -- --filter @docform/cli dev -- generate --input exa
 Run the API:
 
 ```bash
-pnpm api
+pnpm --filter @docform/cli dev -- serve --port 3000
 ```
 
-Generate a PDF through the API:
+The package-level development shortcut `pnpm api` is still available.
+
+Generate a PDF or DOCX through the API:
 
 ```bash
 curl -X POST http://localhost:3000/v1/documents/generate \
@@ -93,6 +111,8 @@ curl -X POST http://localhost:3000/v1/documents/generate \
     "content_markdown": "# API Report\n\nGenerated from the local API."
   }'
 ```
+
+Use `"format": "docx"` to create a DOCX file through the same endpoint.
 
 Generate an HTML preview:
 
@@ -116,6 +136,35 @@ Run the API with Docker dev:
 ```bash
 pnpm api:docker
 ```
+
+## Local MCP Server
+
+Run the local MCP server over stdio:
+
+```bash
+pnpm --filter @docform/cli dev -- mcp
+```
+
+The package-level development shortcut `pnpm mcp` is still available.
+
+Available tools:
+
+- `generate_document`: creates a local PDF or DOCX from Markdown.
+- `preview_document`: returns HTML preview from Markdown.
+- `list_templates`: lists templates from the existing registry.
+- `get_template`: returns metadata for one template.
+
+Example `generate_document` tool input:
+
+```json
+{
+  "format": "docx",
+  "template": "minimal",
+  "content_markdown": "# MCP Report\n\nGenerated locally."
+}
+```
+
+Set `DOCFORM_TEMPLATES_ROOT` or `DOCFORM_OUTPUT_ROOT` when you need non-default local paths.
 
 ## AI Generation From CLI
 
@@ -177,10 +226,11 @@ pnpm --filter @docform/cli dev -- generate \
 
 ## Definition Of Done
 
-The first working version is ready when this command creates a valid, non-empty PDF:
+The local 0.3 MVP is ready when these commands create valid, non-empty PDF and DOCX files:
 
 ```bash
 docform generate --input examples/markdown/report.md --template minimal --format pdf --output output/report.pdf
+docform generate --input examples/markdown/report.md --template minimal --format docx --output output/report.docx
 ```
 
 For local development, the equivalent workspace command is:

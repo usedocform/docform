@@ -52,6 +52,32 @@ describe("DocForm API", () => {
     expect(pdfHeader.startsWith("%PDF")).toBe(true);
   });
 
+  it("generates a non-empty DOCX", async () => {
+    const response = await postJson("/v1/documents/generate", {
+      content_markdown: "# API DOCX Report\n\nGenerated from API.",
+      template: "minimal",
+      format: "docx"
+    });
+    const body = (await response.json()) as {
+      document_id: string;
+      status: string;
+      format: string;
+      file_path: string;
+    };
+
+    expect(response.status).toBe(200);
+    expect(body.document_id).toMatch(/^doc_/);
+    expect(body.status).toBe("completed");
+    expect(body.format).toBe("docx");
+
+    const docxPath = path.resolve(process.cwd(), body.file_path);
+    const docxStat = await stat(docxPath);
+    expect(docxStat.size).toBeGreaterThan(0);
+
+    const docxHeader = await readFile(docxPath, { encoding: "utf8" });
+    expect(docxHeader.startsWith("PK")).toBe(true);
+  });
+
   it("returns HTML preview", async () => {
     const response = await postJson("/v1/documents/preview", {
       content_markdown: "# Preview\n\nHello API.",
@@ -101,6 +127,19 @@ describe("DocForm API", () => {
     expect(response.status).toBe(400);
     expect(body.error.code).toBe("VALIDATION_ERROR");
     expect(body.error.message).toContain("content_markdown");
+  });
+
+  it("returns validation errors for unknown formats", async () => {
+    const response = await postJson("/v1/documents/generate", {
+      content_markdown: "# API Report\n\nGenerated from API.",
+      template: "minimal",
+      format: "txt"
+    });
+    const body = (await response.json()) as { error: { code: string; message: string } };
+
+    expect(response.status).toBe(400);
+    expect(body.error.code).toBe("VALIDATION_ERROR");
+    expect(body.error.message).toContain("Unsupported output format");
   });
 
   it("returns malformed JSON errors as validation errors", async () => {

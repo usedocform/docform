@@ -1,7 +1,7 @@
 {
-  "name": "@docform/api",
-  "version": "0.2.0",
-  "description": "Local REST API for DocForm document generation.",
+  "name": "@docform/mcp-server",
+  "version": "0.3.0",
+  "description": "Local MCP server for DocForm document generation.",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -12,6 +12,9 @@
       "import": "./dist/index.js"
     }
   },
+  "bin": {
+    "docform-mcp": "./dist/index.js"
+  },
   "scripts": {
     "build": "tsup src/index.ts --format esm --dts --clean",
     "dev": "node --conditions development --import tsx src/index.ts",
@@ -19,6 +22,7 @@
   },
   "dependencies": {
     "@docform/core": "workspace:*",
-    "fastify": "^5.8.5"
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "zod": "^4.4.1"
   }
 }

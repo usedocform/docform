@@ -1,11 +1,11 @@
 import { ValidationError } from "./errors.js";
 import type { DocumentBlock, DocumentModel } from "./document-model/types.js";
 
-export type OutputFormat = "pdf";
+export type OutputFormat = "pdf" | "docx";
 
 export function assertSupportedFormat(format: string): asserts format is OutputFormat {
-  if (format !== "pdf") {
-    throw new ValidationError(`Unsupported output format "${format}". DocForm 0.1 supports only "pdf".`);
+  if (format !== "pdf" && format !== "docx") {
+    throw new ValidationError(`Unsupported output format "${format}". Supported formats: "pdf", "docx".`);
   }
 }
 

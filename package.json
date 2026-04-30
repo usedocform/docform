@@ -9,6 +9,7 @@
     "api:build": "pnpm --filter @docform/api build",
     "api:docker": "docker compose -f docker-compose.dev.yml up --build",
     "build": "pnpm -r build",
+    "mcp": "pnpm --filter @docform/mcp-server dev",
     "test": "vitest run",
     "typecheck": "tsc -p tsconfig.base.json --noEmit"
   },

@@ -8,6 +8,22 @@ import { describe, expect, it } from "vitest";
 const execFileAsync = promisify(execFile);
 
 describe("docform generate", () => {
+  it("shows help for serve and mcp commands", async () => {
+    const serve = await execFileAsync(
+      process.execPath,
+      ["--conditions", "development", "--import", "tsx", "packages/cli/src/index.ts", "serve", "--help"],
+      { cwd: process.cwd() }
+    );
+    const mcp = await execFileAsync(
+      process.execPath,
+      ["--conditions", "development", "--import", "tsx", "packages/cli/src/index.ts", "mcp", "--help"],
+      { cwd: process.cwd() }
+    );
+
+    expect(serve.stdout).toContain("docform serve");
+    expect(mcp.stdout).toContain("docform mcp");
+  });
+
   it("creates a non-empty PDF from Markdown", async () => {
     const outputDir = await mkdtemp(path.join(tmpdir(), "docform-"));
     const outputPath = path.join(outputDir, "report.pdf");
@@ -27,6 +43,35 @@ describe("docform generate", () => {
         "minimal",
         "--format",
         "pdf",
+        "--output",
+        outputPath
+      ],
+      { cwd: process.cwd() }
+    );
+
+    const output = await stat(outputPath);
+    expect(output.size).toBeGreaterThan(0);
+  });
+
+  it("creates a non-empty DOCX from Markdown", async () => {
+    const outputDir = await mkdtemp(path.join(tmpdir(), "docform-docx-"));
+    const outputPath = path.join(outputDir, "report.docx");
+
+    await execFileAsync(
+      process.execPath,
+      [
+        "--conditions",
+        "development",
+        "--import",
+        "tsx",
+        "packages/cli/src/index.ts",
+        "generate",
+        "--input",
+        "examples/markdown/report.md",
+        "--template",
+        "minimal",
+        "--format",
+        "docx",
         "--output",
         outputPath
       ],

@@ -1,6 +1,7 @@
 import { readFile } from "node:fs/promises";
 import type { DocumentModel } from "./document-model/types.js";
 import { parseMarkdown } from "./input/markdown.js";
+import { renderDocx } from "./renderers/docx.js";
 import { renderHtml } from "./renderers/html.js";
 import { renderPdf } from "./renderers/pdf.js";
 import { TemplateRegistry } from "./templates/registry.js";
@@ -44,7 +45,7 @@ export async function generateDocument(options: GenerateDocumentOptions): Promis
 
   const markdown = await readFile(options.inputPath, "utf8");
   const model = parseMarkdown(markdown);
-  await renderDocumentModelToPdf({
+  await renderDocumentModelToFile({
     model,
     outputPath: options.outputPath,
     templateId: options.templateId,
@@ -61,7 +62,7 @@ export async function generateDocumentFromMarkdown(options: GenerateDocumentFrom
   assertSupportedFormat(format);
 
   const model = parseMarkdown(options.contentMarkdown);
-  await renderDocumentModelToPdf({ ...options, model, format });
+  await renderDocumentModelToFile({ ...options, model, format });
 }
 
 export async function generateDocumentFromModel(options: GenerateDocumentFromModelOptions): Promise<void> {
@@ -72,7 +73,7 @@ export async function generateDocumentFromModel(options: GenerateDocumentFromMod
   assertSupportedFormat(format);
   assertValidDocumentModel(options.model);
 
-  await renderDocumentModelToPdf({ ...options, format });
+  await renderDocumentModelToFile({ ...options, format });
 }
 
 export async function renderHtmlFromMarkdown(options: {
@@ -95,7 +96,7 @@ export async function renderHtmlFromMarkdown(options: {
   return renderHtml(model, template);
 }
 
-async function renderDocumentModelToPdf(options: ValidatedGenerateDocumentFromModelOptions): Promise<void> {
+async function renderDocumentModelToFile(options: ValidatedGenerateDocumentFromModelOptions): Promise<void> {
   assertValidDocumentModel(options.model);
 
   const registry = new TemplateRegistry(options.templatesRoot);
@@ -105,5 +106,10 @@ async function renderDocumentModelToPdf(options: ValidatedGenerateDocumentFromMo
   }
 
   const html = renderHtml(options.model, template);
-  await renderPdf(html, options.outputPath, template);
+  if (options.format === "pdf") {
+    await renderPdf(html, options.outputPath, template);
+    return;
+  }
+
+  await renderDocx(options.model, options.outputPath, template);
 }

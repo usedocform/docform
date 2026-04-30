@@ -2,7 +2,7 @@
   "id": "minimal",
   "name": "Minimal",
   "version": "0.1.0",
-  "formats": ["pdf", "html"],
+  "formats": ["pdf", "html", "docx"],
   "defaultOptions": {
     "pageSize": "A4",
     "margin": "20mm"

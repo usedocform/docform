@@ -7,8 +7,12 @@ describe("assertSupportedFormat", () => {
     expect(() => assertSupportedFormat("pdf")).not.toThrow();
   });
 
-  it("rejects unsupported formats in v0.1", () => {
-    expect(() => assertSupportedFormat("docx")).toThrow(ValidationError);
+  it("accepts docx", () => {
+    expect(() => assertSupportedFormat("docx")).not.toThrow();
+  });
+
+  it("rejects unsupported formats", () => {
+    expect(() => assertSupportedFormat("txt")).toThrow(ValidationError);
   });
 });
 

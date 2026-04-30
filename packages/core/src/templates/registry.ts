@@ -2,7 +2,7 @@ import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import { TemplateNotFoundError, ValidationError } from "../errors.js";
 
-export type TemplateFormat = "pdf" | "html";
+export type TemplateFormat = "pdf" | "html" | "docx";
 
 export type TemplateManifest = {
   id: string;
@@ -80,7 +80,7 @@ function parseTemplateManifest(value: unknown): TemplateManifest {
     throw new ValidationError("Template manifest is missing required fields.");
   }
 
-  if (!manifest.formats.every((format) => format === "pdf" || format === "html")) {
+  if (!manifest.formats.every((format) => format === "pdf" || format === "html" || format === "docx")) {
     throw new ValidationError("Template manifest contains an unsupported format.");
   }
 
