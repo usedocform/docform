@@ -8,6 +8,20 @@ alwaysApply: true
 - Use Vitest for package tests and place tests next to the owning package under `packages/*/tests`.
 - Test behavior visible to users or package consumers, not private implementation details.
 - Add or update tests when changing validation, rendering, AI guardrails, CLI parsing, template loading, or public exports.
+
+## Test Integrity
+
+- Tests must describe the expected behavior of the product or public API, not the current implementation.
+- Do not weaken, delete, skip, or rewrite assertions only to make a failing test pass.
+- If a test fails, first assume it may be exposing a real bug or mismatch in behavior. Investigate the implementation before changing the test.
+- Update tests only when the intended behavior or public contract has intentionally changed.
+- When changing an existing test, explain why the previous expectation was wrong or obsolete.
+- Do not mock away the behavior being tested. Mocks may isolate external dependencies, but must not hide the core failure.
+- Avoid broad snapshots or overly generic assertions that can pass while behavior is broken.
+- For bug fixes, prefer adding or keeping a regression test that fails before the fix and passes after it.
+
+## Verification
+
 - Before finishing substantive TypeScript changes, run `pnpm typecheck` and `pnpm test` from the repo root when practical.
 - Run `pnpm build` when changing package exports, tsup config, package manifests, or code that may affect generated declarations.
 - GitHub Actions should call the same package manager and scripts used locally. Keep workflow logic minimal and avoid duplicating build behavior in YAML.

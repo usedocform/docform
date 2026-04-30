@@ -1,4 +1,4 @@
-import { readFile } from "node:fs/promises";
+import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import { TemplateNotFoundError, ValidationError } from "../errors.js";
 
@@ -23,6 +23,27 @@ export type Template = {
 
 export class TemplateRegistry {
   constructor(private readonly templatesRoot: string) {}
+
+  async list(): Promise<TemplateManifest[]> {
+    const entries = await readdir(this.templatesRoot, { withFileTypes: true });
+    const templates: Template[] = [];
+
+    for (const entry of entries) {
+      if (!entry.isDirectory()) {
+        continue;
+      }
+
+      try {
+        templates.push(await this.get(entry.name));
+      } catch (error) {
+        if (!(error instanceof TemplateNotFoundError)) {
+          throw error;
+        }
+      }
+    }
+
+    return templates.map((template) => template.manifest);
+  }
 
   async get(templateId: string): Promise<Template> {
     const directory = path.join(this.templatesRoot, templateId);

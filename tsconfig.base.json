@@ -16,5 +16,5 @@
       "@docform/ai": ["./packages/ai/src/index.ts"]
     }
   },
-  "include": ["packages/**/*.ts", "vitest.config.ts"]
+  "include": ["apps/**/*.ts", "packages/**/*.ts", "vitest.config.ts"]
 }
