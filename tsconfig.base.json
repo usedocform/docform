@@ -14,6 +14,7 @@
     "paths": {
       "@docform/core": ["./packages/core/src/index.ts"],
       "@docform/ai": ["./packages/ai/src/index.ts"],
+      "@docform/sdk-js": ["./packages/sdk-js/src/index.ts"],
       "@docform/api": ["./apps/api/src/index.ts"],
       "@docform/mcp-server": ["./apps/mcp-server/src/index.ts"]
     }

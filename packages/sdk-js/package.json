@@ -1,0 +1,30 @@
+{
+  "name": "@docform/sdk-js",
+  "version": "0.1.0",
+  "description": "JavaScript and TypeScript SDK for integrating with the DocForm REST API.",
+  "type": "module",
+  "license": "Apache-2.0",
+  "keywords": [
+    "docform",
+    "sdk",
+    "typescript",
+    "pdf",
+    "docx",
+    "document-generation"
+  ],
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "development": "./src/index.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "scripts": {
+    "build": "tsup src/index.ts --format esm,cjs --dts --clean --tsconfig ../../tsconfig.base.json",
+    "test": "cd ../.. && vitest run packages/sdk-js/tests/client.test.ts"
+  }
+}
