@@ -1,6 +1,6 @@
 {
   "name": "@docform/mcp-server",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Local MCP server for DocForm document generation.",
   "type": "module",
   "license": "Apache-2.0",

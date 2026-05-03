@@ -1,5 +1,6 @@
 #!/usr/bin/env node
-import { readFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { homedir } from "node:os";
 import path from "node:path";
 import { composeDocument, createAiProvider, type AiProviderName } from "@docform/ai";
 import { createApiServer } from "@docform/api";
@@ -33,6 +34,11 @@ type McpArgs = {
   outputRoot?: string;
 };
 
+type NewThemeArgs = {
+  id: string;
+  name?: string;
+};
+
 async function main(argv: string[]): Promise<void> {
   const normalizedArgv = argv[0] === "--" ? argv.slice(1) : argv;
   const [command, ...rest] = normalizedArgv;
@@ -63,6 +69,13 @@ async function main(argv: string[]): Promise<void> {
         return;
       }
       await runMcp(rest);
+      return;
+    case "new-theme":
+      if (isHelp(rest)) {
+        printNewThemeHelp();
+        return;
+      }
+      await runNewTheme(rest);
       return;
     default:
       throw new Error(`Unknown command "${command}".`);
@@ -141,6 +154,22 @@ async function runMcp(argv: string[]): Promise<void> {
     templatesRoot: args.templatesRoot,
     outputRoot: args.outputRoot
   });
+}
+
+async function runNewTheme(argv: string[]): Promise<void> {
+  const args = parseNewThemeArgs(argv);
+  const themesRoot = getUserThemesRoot();
+  const themeDirectory = path.join(themesRoot, args.id);
+
+  await mkdir(themesRoot, { recursive: true });
+  await mkdir(themeDirectory);
+  await Promise.all([
+    writeFile(path.join(themeDirectory, "template.json"), createThemeManifest(args), "utf8"),
+    writeFile(path.join(themeDirectory, "styles.css"), createThemeStyles(), "utf8")
+  ]);
+
+  console.log(`Created theme "${args.id}" at ${themeDirectory}`);
+  console.log(`Use it with --template ${args.id} --templates-root ${themesRoot}`);
 }
 
 function parseGenerateArgs(argv: string[]): GenerateArgs {
@@ -282,6 +311,45 @@ function parseMcpArgs(argv: string[]): McpArgs {
   return args;
 }
 
+function parseNewThemeArgs(argv: string[]): NewThemeArgs {
+  const args: Partial<NewThemeArgs> = {};
+
+  for (let index = 0; index < argv.length; index += 1) {
+    const value = argv[index];
+    if (!value) {
+      continue;
+    }
+
+    if (!value.startsWith("--")) {
+      if (args.id) {
+        throw new Error(`Unexpected argument "${value}".`);
+      }
+      args.id = value;
+      continue;
+    }
+
+    switch (value) {
+      case "--name":
+        args.name = readFlagValue(argv, index, value);
+        index += 1;
+        break;
+      default:
+        throw new Error(`Unknown option "${value}".`);
+    }
+  }
+
+  if (!args.id) {
+    throw new Error("Theme id is required.");
+  }
+
+  assertValidThemeId(args.id);
+
+  return {
+    id: args.id,
+    name: args.name
+  };
+}
+
 function readFlagValue(argv: string[], index: number, flag: string): string {
   const value = argv[index + 1];
   if (!value || value.startsWith("--")) {
@@ -308,6 +376,188 @@ function parseAiProvider(value: string): AiProviderName {
   throw new Error(`Unsupported AI provider "${value}".`);
 }
 
+function assertValidThemeId(value: string): void {
+  if (/^[a-z0-9][a-z0-9_-]*$/.test(value)) {
+    return;
+  }
+
+  throw new Error("Theme id must use lowercase letters, numbers, dashes, or underscores.");
+}
+
+function getUserThemesRoot(): string {
+  const docformHome = process.env.DOCFORM_HOME ? path.resolve(process.env.DOCFORM_HOME) : path.join(homedir(), ".docform");
+  return path.join(docformHome, "themes");
+}
+
+function createThemeManifest(args: NewThemeArgs): string {
+  const manifest = {
+    id: args.id,
+    name: args.name ?? humanizeThemeId(args.id),
+    version: "0.1.0",
+    formats: ["pdf", "html", "docx"],
+    defaultOptions: {
+      pageSize: "A4",
+      margin: "20mm"
+    },
+    layout: {
+      header: {
+        content: args.name ?? humanizeThemeId(args.id),
+        align: "left"
+      },
+      footer: {
+        content: "Generated with DocForm",
+        align: "center"
+      }
+    },
+    design: {
+      primaryColor: "#2563eb",
+      textColor: "#1f2937",
+      backgroundColor: "#ffffff",
+      fontFamily: 'Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+      documentMaxWidth: "760px"
+    }
+  };
+
+  return `${JSON.stringify(manifest, null, 2)}\n`;
+}
+
+function createThemeStyles(): string {
+  return `@page {
+  size: A4;
+  margin: 20mm;
+}
+
+:root {
+  color: var(--docform-text-color, #1f2937);
+  font-family: var(
+    --docform-font-family,
+    Inter,
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif
+  );
+  line-height: 1.5;
+}
+
+body {
+  margin: 0;
+  background: var(--docform-background-color, #ffffff);
+}
+
+.docform-page {
+  max-width: var(--docform-document-max-width, 760px);
+  margin: 0 auto;
+}
+
+.docform-document {
+  margin: 0;
+}
+
+.docform-header,
+.docform-footer {
+  color: var(--docform-primary-color, #2563eb);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  margin: 0 0 24px;
+  text-transform: uppercase;
+}
+
+.docform-footer {
+  color: #6b7280;
+  margin: 32px 0 0;
+}
+
+.docform-align-left {
+  text-align: left;
+}
+
+.docform-align-center {
+  text-align: center;
+}
+
+.docform-align-right {
+  text-align: right;
+}
+
+h1,
+h2,
+h3 {
+  color: #111827;
+  line-height: 1.2;
+  margin: 1.4em 0 0.5em;
+}
+
+h1 {
+  font-size: 32px;
+  margin-top: 0;
+}
+
+h2 {
+  font-size: 24px;
+}
+
+h3 {
+  font-size: 18px;
+}
+
+p,
+ul,
+ol,
+blockquote,
+pre,
+table {
+  margin: 0 0 16px;
+}
+
+blockquote {
+  border-left: 4px solid #d1d5db;
+  color: #4b5563;
+  padding-left: 16px;
+}
+
+pre {
+  background: #f3f4f6;
+  border-radius: 8px;
+  overflow-wrap: break-word;
+  padding: 14px;
+  white-space: pre-wrap;
+}
+
+code {
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 13px;
+}
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+th,
+td {
+  border: 1px solid #d1d5db;
+  padding: 8px 10px;
+  text-align: left;
+}
+
+th {
+  background: #f9fafb;
+  color: #111827;
+}
+`;
+}
+
+function humanizeThemeId(value: string): string {
+  return value
+    .split(/[-_]/)
+    .filter(Boolean)
+    .map((part) => `${part[0]?.toUpperCase() ?? ""}${part.slice(1)}`)
+    .join(" ");
+}
+
 function isHelp(argv: string[]): boolean {
   return argv.length === 1 && (argv[0] === "--help" || argv[0] === "-h");
 }
@@ -318,12 +568,14 @@ function printHelp(): void {
 Usage:
   docform generate --input examples/markdown/report.md --template minimal --format pdf --output output/report.pdf
   docform generate --input examples/markdown/report.md --template minimal --format docx --output output/report.docx
+  docform new-theme company-report --name "Company Report"
   docform serve --port 3000
   docform mcp
   docform generate --input raw.txt --ai-instruction "make it office style" --ai-provider openai-compatible --ai-model gpt-4.1-mini --output output/report.pdf
 
 Commands:
   generate          Generate a PDF or DOCX from Markdown.
+  new-theme         Create a user theme in ~/.docform/themes.
   serve             Start the local REST API.
   mcp               Start the local MCP server over stdio.
 
@@ -380,6 +632,21 @@ Usage:
 Options:
   --templates-root   Templates directory. Defaults to DOCFORM_TEMPLATES_ROOT or packages/templates-basic/templates.
   --output-root      Output directory. Defaults to DOCFORM_OUTPUT_ROOT or output.
+`);
+}
+
+function printNewThemeHelp(): void {
+  console.log(`DocForm new-theme
+
+Usage:
+  docform new-theme company-report --name "Company Report"
+
+Options:
+  --name             Human-readable theme name. Defaults to a title-cased theme id.
+
+Creates:
+  ~/.docform/themes/<theme-id>/template.json
+  ~/.docform/themes/<theme-id>/styles.css
 `);
 }
 

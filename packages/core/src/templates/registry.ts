@@ -4,6 +4,21 @@ import { TemplateNotFoundError, ValidationError } from "../errors.js";
 
 export type TemplateFormat = "pdf" | "html" | "docx";
 
+export type TemplateLayoutSlot = {
+  content?: string;
+  align?: "left" | "center" | "right";
+  className?: string;
+  visible?: boolean;
+};
+
+export type TemplateDesign = {
+  primaryColor?: string;
+  textColor?: string;
+  backgroundColor?: string;
+  fontFamily?: string;
+  documentMaxWidth?: string;
+};
+
 export type TemplateManifest = {
   id: string;
   name: string;
@@ -13,6 +28,11 @@ export type TemplateManifest = {
     pageSize?: string;
     margin?: string;
   };
+  layout?: {
+    header?: TemplateLayoutSlot;
+    footer?: TemplateLayoutSlot;
+  };
+  design?: TemplateDesign;
 };
 
 export type Template = {
@@ -89,6 +109,67 @@ function parseTemplateManifest(value: unknown): TemplateManifest {
     name: manifest.name,
     version: manifest.version,
     formats: manifest.formats,
-    defaultOptions: manifest.defaultOptions
+    defaultOptions: parseDefaultOptions(manifest.defaultOptions),
+    layout: parseTemplateLayout(manifest.layout),
+    design: parseTemplateDesign(manifest.design)
   };
+}
+
+function parseDefaultOptions(value: TemplateManifest["defaultOptions"]): TemplateManifest["defaultOptions"] {
+  if (!value) {
+    return undefined;
+  }
+
+  return {
+    pageSize: readOptionalString(value, "pageSize"),
+    margin: readOptionalString(value, "margin")
+  };
+}
+
+function parseTemplateLayout(value: TemplateManifest["layout"]): TemplateManifest["layout"] {
+  if (!value) {
+    return undefined;
+  }
+
+  return {
+    header: parseTemplateLayoutSlot(value.header),
+    footer: parseTemplateLayoutSlot(value.footer)
+  };
+}
+
+function parseTemplateLayoutSlot(value: TemplateLayoutSlot | undefined): TemplateLayoutSlot | undefined {
+  if (!value) {
+    return undefined;
+  }
+
+  const align = value.align;
+  if (align && align !== "left" && align !== "center" && align !== "right") {
+    throw new ValidationError("Template layout slot alignment must be left, center, or right.");
+  }
+
+  return {
+    content: readOptionalString(value, "content"),
+    align,
+    className: readOptionalString(value, "className"),
+    visible: typeof value.visible === "boolean" ? value.visible : undefined
+  };
+}
+
+function parseTemplateDesign(value: TemplateDesign | undefined): TemplateDesign | undefined {
+  if (!value) {
+    return undefined;
+  }
+
+  return {
+    primaryColor: readOptionalString(value, "primaryColor"),
+    textColor: readOptionalString(value, "textColor"),
+    backgroundColor: readOptionalString(value, "backgroundColor"),
+    fontFamily: readOptionalString(value, "fontFamily"),
+    documentMaxWidth: readOptionalString(value, "documentMaxWidth")
+  };
+}
+
+function readOptionalString(value: Record<string, unknown>, key: string): string | undefined {
+  const field = value[key];
+  return typeof field === "string" ? field : undefined;
 }

@@ -150,6 +150,8 @@ async function listTemplates(context: McpToolContext): Promise<McpToolResult> {
       name: template.name,
       version: template.version,
       formats: template.formats,
+      layout: template.layout,
+      design: template.design,
       source: "basic"
     }))
   };
@@ -167,6 +169,8 @@ async function getTemplate(args: unknown, context: McpToolContext): Promise<McpT
     version: template.manifest.version,
     formats: template.manifest.formats,
     default_options: template.manifest.defaultOptions,
+    layout: template.manifest.layout,
+    design: template.manifest.design,
     source: "basic"
   };
 }

@@ -94,25 +94,58 @@ describe("DocForm API", () => {
 
   it("lists templates", async () => {
     const response = await fetch(`${baseUrl}/v1/templates`);
-    const body = (await response.json()) as { templates: Array<{ id: string; formats: string[] }> };
+    const body = (await response.json()) as {
+      templates: Array<{
+        id: string;
+        formats: string[];
+        layout?: {
+          header?: {
+            content?: string;
+          };
+        };
+        design?: {
+          primaryColor?: string;
+        };
+      }>;
+    };
 
     expect(response.status).toBe(200);
     expect(body.templates).toContainEqual(
       expect.objectContaining({
         id: "minimal",
-        formats: expect.arrayContaining(["pdf", "html"])
+        formats: expect.arrayContaining(["pdf", "html"]),
+        layout: expect.objectContaining({
+          header: expect.objectContaining({ content: "DocForm" })
+        }),
+        design: expect.objectContaining({ primaryColor: "#2563eb" })
       })
     );
   });
 
   it("returns template details", async () => {
     const response = await fetch(`${baseUrl}/v1/templates/minimal`);
-    const body = (await response.json()) as { id: string; name: string; source: string };
+    const body = (await response.json()) as {
+      id: string;
+      name: string;
+      source: string;
+      layout?: {
+        footer?: {
+          content?: string;
+        };
+      };
+      design?: {
+        documentMaxWidth?: string;
+      };
+    };
 
     expect(response.status).toBe(200);
     expect(body).toMatchObject({
       id: "minimal",
       name: "Minimal",
+      layout: expect.objectContaining({
+        footer: expect.objectContaining({ content: "Generated with DocForm" })
+      }),
+      design: expect.objectContaining({ documentMaxWidth: "760px" }),
       source: "basic"
     });
   });

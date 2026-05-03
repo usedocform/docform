@@ -50,7 +50,11 @@ describe("DocForm MCP tools", () => {
     expect(result.templates).toContainEqual(
       expect.objectContaining({
         id: "minimal",
-        formats: expect.arrayContaining(["pdf", "html", "docx"])
+        formats: expect.arrayContaining(["pdf", "html", "docx"]),
+        layout: expect.objectContaining({
+          header: expect.objectContaining({ content: "DocForm" })
+        }),
+        design: expect.objectContaining({ primaryColor: "#2563eb" })
       })
     );
   });
@@ -62,6 +66,10 @@ describe("DocForm MCP tools", () => {
     expect(result).toMatchObject({
       id: "minimal",
       name: "Minimal",
+      layout: expect.objectContaining({
+        footer: expect.objectContaining({ content: "Generated with DocForm" })
+      }),
+      design: expect.objectContaining({ documentMaxWidth: "760px" }),
       source: "basic"
     });
   });

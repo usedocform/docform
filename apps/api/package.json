@@ -1,6 +1,6 @@
 {
   "name": "@docform/api",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Local REST API for DocForm document generation.",
   "type": "module",
   "license": "Apache-2.0",
