@@ -140,6 +140,22 @@ For Docker-based local development:
 pnpm api:docker
 ```
 
+## Custom Templates
+
+Create a local theme when you need a branded header, footer, colors, typography, or page width:
+
+```bash
+docform new-theme company-report --name "Company Report"
+docform generate \
+  --input report.md \
+  --template company-report \
+  --templates-root "$HOME/.docform/themes" \
+  --format pdf \
+  --output output/company-report.pdf
+```
+
+Themes use `template.json` for layout/design tokens and `styles.css` for HTML/PDF styling. DOCX output currently uses the default Word renderer.
+
 ## Local MCP Server
 
 DocForm can run as a local MCP server so AI clients can create documents as tools.
@@ -172,6 +188,38 @@ Example `generate_document` input:
 ```
 
 Set `DOCFORM_TEMPLATES_ROOT` or `DOCFORM_OUTPUT_ROOT` when you need custom local paths.
+
+### Add DocForm To An MCP Client
+
+After installing the CLI, add DocForm as a stdio MCP server in your MCP client configuration:
+
+```json
+{
+  "mcpServers": {
+    "docform": {
+      "command": "docform",
+      "args": ["mcp"],
+      "env": {
+        "DOCFORM_OUTPUT_ROOT": "${workspaceFolder}/output"
+      }
+    }
+  }
+}
+```
+
+If you use the MCP package binary directly, the config can be even shorter:
+
+```json
+{
+  "mcpServers": {
+    "docform": {
+      "command": "docform-mcp"
+    }
+  }
+}
+```
+
+Use an absolute `DOCFORM_OUTPUT_ROOT` when you want generated files to appear in a predictable folder.
 
 ## Optional AI Composition
 

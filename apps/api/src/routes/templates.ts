@@ -20,6 +20,8 @@ async function handleListTemplates(reply: FastifyReply, config: ApiConfig): Prom
       name: template.name,
       version: template.version,
       formats: template.formats,
+      layout: template.layout,
+      design: template.design,
       source: "basic"
     }))
   });
@@ -35,6 +37,8 @@ async function handleGetTemplate(reply: FastifyReply, config: ApiConfig, templat
     version: template.manifest.version,
     formats: template.manifest.formats,
     default_options: template.manifest.defaultOptions,
+    layout: template.manifest.layout,
+    design: template.manifest.design,
     source: "basic"
   });
 }
