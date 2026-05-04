@@ -1,0 +1,83 @@
+services:
+  api:
+    image: ${DOCFORM_API_IMAGE:-ghcr.io/usedocform/docform-api:latest}
+    build:
+      context: .
+      dockerfile: infra/docker/prod/Dockerfile
+    environment:
+      PORT: "3000"
+      DOCFORM_TEMPLATES_ROOT: ${DOCFORM_TEMPLATES_ROOT:-/app/packages/templates-basic/templates}
+      DOCFORM_OUTPUT_ROOT: /data/docform/output
+      DOCFORM_LOG_REQUESTS: "true"
+      DOCFORM_API_KEY: ${DOCFORM_API_KEY:-}
+      DOCFORM_STORAGE_DRIVER: ${DOCFORM_STORAGE_DRIVER:-local}
+      DOCFORM_S3_ENDPOINT: ${DOCFORM_S3_ENDPOINT:-}
+      DOCFORM_S3_REGION: ${DOCFORM_S3_REGION:-us-east-1}
+      DOCFORM_S3_BUCKET: ${DOCFORM_S3_BUCKET:-}
+      DOCFORM_S3_ACCESS_KEY_ID: ${DOCFORM_S3_ACCESS_KEY_ID:-}
+      DOCFORM_S3_SECRET_ACCESS_KEY: ${DOCFORM_S3_SECRET_ACCESS_KEY:-}
+      DOCFORM_S3_FORCE_PATH_STYLE: ${DOCFORM_S3_FORCE_PATH_STYLE:-false}
+      DOCFORM_S3_PREFIX: ${DOCFORM_S3_PREFIX:-}
+      DOCFORM_S3_PRESIGN_EXPIRES_SECONDS: ${DOCFORM_S3_PRESIGN_EXPIRES_SECONDS:-3600}
+      DOCFORM_REDIS_URL: ${DOCFORM_REDIS_URL:-redis://redis:6379}
+      DOCFORM_JOBS_ENABLED: ${DOCFORM_JOBS_ENABLED:-true}
+      DOCFORM_JOBS_WORKER_ENABLED: "false"
+      DOCFORM_JOB_TTL_SECONDS: ${DOCFORM_JOB_TTL_SECONDS:-86400}
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./themes:/data/docform/themes:ro
+      - docform-output:/data/docform/output
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "node -e \"fetch('http://127.0.0.1:3000/ready').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\""
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    depends_on:
+      redis:
+        condition: service_started
+
+  worker:
+    image: ${DOCFORM_API_IMAGE:-ghcr.io/usedocform/docform-api:latest}
+    build:
+      context: .
+      dockerfile: infra/docker/prod/Dockerfile
+    command: ["node", "apps/api/dist/worker.js"]
+    environment:
+      DOCFORM_TEMPLATES_ROOT: ${DOCFORM_TEMPLATES_ROOT:-/app/packages/templates-basic/templates}
+      DOCFORM_OUTPUT_ROOT: /data/docform/output
+      DOCFORM_LOG_REQUESTS: "true"
+      DOCFORM_STORAGE_DRIVER: ${DOCFORM_STORAGE_DRIVER:-local}
+      DOCFORM_S3_ENDPOINT: ${DOCFORM_S3_ENDPOINT:-}
+      DOCFORM_S3_REGION: ${DOCFORM_S3_REGION:-us-east-1}
+      DOCFORM_S3_BUCKET: ${DOCFORM_S3_BUCKET:-}
+      DOCFORM_S3_ACCESS_KEY_ID: ${DOCFORM_S3_ACCESS_KEY_ID:-}
+      DOCFORM_S3_SECRET_ACCESS_KEY: ${DOCFORM_S3_SECRET_ACCESS_KEY:-}
+      DOCFORM_S3_FORCE_PATH_STYLE: ${DOCFORM_S3_FORCE_PATH_STYLE:-false}
+      DOCFORM_S3_PREFIX: ${DOCFORM_S3_PREFIX:-}
+      DOCFORM_S3_PRESIGN_EXPIRES_SECONDS: ${DOCFORM_S3_PRESIGN_EXPIRES_SECONDS:-3600}
+      DOCFORM_REDIS_URL: ${DOCFORM_REDIS_URL:-redis://redis:6379}
+      DOCFORM_JOBS_ENABLED: ${DOCFORM_JOBS_ENABLED:-true}
+      DOCFORM_JOB_TTL_SECONDS: ${DOCFORM_JOB_TTL_SECONDS:-86400}
+      DOCFORM_JOB_CONCURRENCY: ${DOCFORM_JOB_CONCURRENCY:-1}
+    volumes:
+      - ./themes:/data/docform/themes:ro
+      - docform-output:/data/docform/output
+    depends_on:
+      redis:
+        condition: service_started
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - docform-redis:/data
+
+volumes:
+  docform-output:
+  docform-redis:

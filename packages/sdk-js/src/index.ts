@@ -2,6 +2,7 @@ export type DocumentFormat = "pdf" | "docx";
 
 export type DocFormClientOptions = {
   baseUrl: string;
+  apiKey?: string;
   fetch?: FetchLike;
   headers?: Record<string, string>;
 };
@@ -11,18 +12,47 @@ export type GenerateDocumentInput = {
   template?: string;
   format?: DocumentFormat;
   outputPath?: string;
+  mode?: "sync" | "async";
 };
 
 export type GenerateDocumentResult = {
   documentId: string;
-  status: string;
+  status: "completed";
   format: DocumentFormat;
   template: string;
   filePath: string;
+  storage?: "local" | "s3";
+  downloadUrl?: string;
+  bucket?: string;
+  key?: string;
   stats?: {
     pages: number | null;
   };
 };
+
+export type QueuedGenerateDocumentResult = {
+  documentId: string;
+  status: "queued";
+};
+
+export type DocumentStatusResult =
+  | QueuedGenerateDocumentResult
+  | {
+      documentId: string;
+      status: "running";
+      format?: DocumentFormat;
+      template?: string;
+    }
+  | GenerateDocumentResult
+  | {
+      documentId: string;
+      status: "failed";
+      format?: DocumentFormat;
+      template?: string;
+      error?: {
+        message: string;
+      };
+    };
 
 export type PreviewDocumentInput = {
   contentMarkdown: string;
@@ -52,7 +82,10 @@ export type TemplateDetails = TemplateSummary & {
 };
 
 export type DocFormClient = {
-  generateDocument(input: GenerateDocumentInput): Promise<GenerateDocumentResult>;
+  generateDocument(input: GenerateDocumentInput & { mode: "async" }): Promise<QueuedGenerateDocumentResult>;
+  generateDocument(input: GenerateDocumentInput & { mode?: "sync" }): Promise<GenerateDocumentResult>;
+  generateDocument(input: GenerateDocumentInput): Promise<GenerateDocumentResult | QueuedGenerateDocumentResult>;
+  getDocumentStatus(documentId: string): Promise<DocumentStatusResult>;
   previewDocument(input: PreviewDocumentInput): Promise<PreviewDocumentResult>;
   listTemplates(): Promise<TemplateSummary[]>;
   getTemplate(id: string): Promise<TemplateDetails>;
@@ -69,10 +102,17 @@ type ApiErrorResponse = {
 
 type GenerateDocumentApiResponse = {
   document_id: string;
-  status: string;
-  format: DocumentFormat;
-  template: string;
-  file_path: string;
+  status: "queued" | "running" | "completed" | "failed";
+  format?: DocumentFormat;
+  template?: string;
+  file_path?: string;
+  storage?: "local" | "s3";
+  download_url?: string;
+  bucket?: string;
+  key?: string;
+  error?: {
+    message?: string;
+  };
   stats?: {
     pages: number | null;
   };
@@ -123,28 +163,30 @@ export function createDocFormClient(options: DocFormClientOptions): DocFormClien
     });
   }
 
-  const request = createRequester(baseUrl, fetchFn, options.headers ?? {});
+  const request = createRequester(baseUrl, fetchFn, createDefaultHeaders(options));
 
   return {
-    async generateDocument(input) {
+    generateDocument: (async (input: GenerateDocumentInput) => {
       const response = await request<GenerateDocumentApiResponse>("/v1/documents/generate", {
         method: "POST",
         body: {
           content_markdown: input.contentMarkdown,
           template: input.template,
           format: input.format,
-          output_path: input.outputPath
+          output_path: input.outputPath,
+          mode: input.mode
         }
       });
 
-      return {
-        documentId: response.document_id,
-        status: response.status,
-        format: response.format,
-        template: response.template,
-        filePath: response.file_path,
-        stats: response.stats
-      };
+      return toDocumentStatusResult(response);
+    }) as DocFormClient["generateDocument"],
+
+    async getDocumentStatus(documentId) {
+      const response = await request<GenerateDocumentApiResponse>(`/v1/documents/${encodeURIComponent(documentId)}`, {
+        method: "GET"
+      });
+
+      return toDocumentStatusResult(response);
     },
 
     async previewDocument(input) {
@@ -225,6 +267,25 @@ function createRequester(baseUrl: string, fetchFn: FetchLike, headers: Record<st
   };
 }
 
+function createDefaultHeaders(options: DocFormClientOptions): Record<string, string> {
+  const headers = { ...(options.headers ?? {}) };
+  const apiKey = options.apiKey?.trim();
+
+  if (apiKey && !hasAuthorizationHeader(headers) && !hasDocFormApiKeyHeader(headers)) {
+    headers.authorization = `Bearer ${apiKey}`;
+  }
+
+  return headers;
+}
+
+function hasAuthorizationHeader(headers: Record<string, string>): boolean {
+  return Object.keys(headers).some((name) => name.toLowerCase() === "authorization");
+}
+
+function hasDocFormApiKeyHeader(headers: Record<string, string>): boolean {
+  return Object.keys(headers).some((name) => name.toLowerCase() === "x-docform-api-key");
+}
+
 function normalizeBaseUrl(baseUrl: string): string {
   const trimmed = baseUrl.trim();
   if (!trimmed) {
@@ -238,6 +299,62 @@ function normalizeBaseUrl(baseUrl: string): string {
 
 function removeUndefinedValues(values: Record<string, unknown>): Record<string, unknown> {
   return Object.fromEntries(Object.entries(values).filter(([, value]) => value !== undefined));
+}
+
+function toDocumentStatusResult(response: GenerateDocumentApiResponse): DocumentStatusResult {
+  if (response.status === "queued") {
+    return {
+      documentId: response.document_id,
+      status: "queued"
+    };
+  }
+
+  if (response.status === "running") {
+    return {
+      documentId: response.document_id,
+      status: "running",
+      format: response.format,
+      template: response.template
+    };
+  }
+
+  if (response.status === "failed") {
+    return {
+      documentId: response.document_id,
+      status: "failed",
+      format: response.format,
+      template: response.template,
+      error:
+        typeof response.error?.message === "string"
+          ? {
+              message: response.error.message
+            }
+          : undefined
+    };
+  }
+
+  return {
+    documentId: response.document_id,
+    status: "completed",
+    format: requireApiField(response.format, "format"),
+    template: requireApiField(response.template, "template"),
+    filePath: requireApiField(response.file_path, "file_path"),
+    storage: response.storage,
+    downloadUrl: response.download_url,
+    bucket: response.bucket,
+    key: response.key,
+    stats: response.stats
+  };
+}
+
+function requireApiField<T>(value: T | undefined, name: string): T {
+  if (value === undefined) {
+    throw new DocFormSdkError(`DocForm API response is missing "${name}".`, {
+      code: "INVALID_RESPONSE"
+    });
+  }
+
+  return value;
 }
 
 async function readJson(response: Response): Promise<unknown> {
