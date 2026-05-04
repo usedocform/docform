@@ -10,7 +10,9 @@ if (isMain) {
   const port = Number.parseInt(process.env.PORT ?? "3000", 10);
   const server = createApiServer({
     templatesRoot: process.env.DOCFORM_TEMPLATES_ROOT,
-    outputRoot: process.env.DOCFORM_OUTPUT_ROOT
+    outputRoot: process.env.DOCFORM_OUTPUT_ROOT,
+    apiKey: process.env.DOCFORM_API_KEY,
+    logRequests: process.env.DOCFORM_LOG_REQUESTS === "true"
   });
 
   server

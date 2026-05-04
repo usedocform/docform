@@ -117,6 +117,23 @@ curl -X POST http://localhost:3000/v1/documents/generate \
 
 Use `"format": "docx"` to create a Word document through the same endpoint.
 
+For longer generation flows, queue an async job and poll its status:
+
+```bash
+curl -X POST http://localhost:3000/v1/documents/generate \
+  -H "content-type: application/json" \
+  -d '{
+    "mode": "async",
+    "format": "pdf",
+    "template": "minimal",
+    "content_markdown": "# Sales Report\n\nRevenue grew by 18% this quarter."
+  }'
+
+curl http://localhost:3000/v1/documents/doc_123
+```
+
+Async jobs use BullMQ with Redis in self-hosted mode through `DOCFORM_REDIS_URL`. In production, the API enqueues jobs and a separate worker container consumes them. Job statuses are `queued`, `running`, `completed`, and `failed`.
+
 Create an HTML preview:
 
 ```bash
@@ -134,11 +151,83 @@ List available templates:
 curl http://localhost:3000/v1/templates
 ```
 
+Health and readiness checks are available for local and self-hosted runtimes:
+
+```bash
+curl http://localhost:3000/health
+curl http://localhost:3000/ready
+```
+
+Set `DOCFORM_API_KEY` to protect REST endpoints. Health and readiness remain open for orchestration:
+
+```bash
+DOCFORM_API_KEY=local-secret docform serve --port 3000
+curl http://localhost:3000/v1/templates \
+  -H "Authorization: Bearer local-secret"
+```
+
 For Docker-based local development:
 
 ```bash
 pnpm api:docker
 ```
+
+For a production-oriented self-hosted container:
+
+```bash
+DOCFORM_API_KEY=local-secret pnpm api:docker:prod
+```
+
+Release builds publish the API image to GitHub Container Registry:
+
+```text
+ghcr.io/usedocform/docform-api:<tag>
+ghcr.io/usedocform/docform-api:latest
+```
+
+Use a published image with compose:
+
+```bash
+DOCFORM_API_IMAGE=ghcr.io/usedocform/docform-api:v0.5.0 \
+docker compose -f docker-compose.prod.yml up
+```
+
+If `DOCFORM_API_IMAGE` is not set, compose uses `ghcr.io/usedocform/docform-api:latest` and can still build from `infra/docker/prod/Dockerfile` when requested with `--build`.
+
+The production compose file runs the API with Redis for async jobs and stores generated files in the `docform-output` volume at `/data/docform/output` inside the container. Override `DOCFORM_OUTPUT_ROOT` when running the API directly.
+
+For custom themes in Docker, put theme folders under `./themes` and point the API at the mounted path:
+
+```bash
+DOCFORM_TEMPLATES_ROOT=/data/docform/themes pnpm api:docker:prod
+```
+
+Expected layout:
+
+```text
+themes/
+  company-report/
+    template.json
+    styles.css
+```
+
+The production compose file mounts `./themes` to `/data/docform/themes:ro`. By default, `DOCFORM_TEMPLATES_ROOT` still points at bundled templates so `minimal` keeps working unless you opt into custom themes.
+
+To store generated REST API documents in an S3-compatible backend instead of local disk, set the storage driver and S3 connection variables:
+
+```bash
+DOCFORM_STORAGE_DRIVER=s3 \
+DOCFORM_S3_ENDPOINT=http://minio:9000 \
+DOCFORM_S3_REGION=us-east-1 \
+DOCFORM_S3_BUCKET=docform-output \
+DOCFORM_S3_ACCESS_KEY_ID=minioadmin \
+DOCFORM_S3_SECRET_ACCESS_KEY=minioadmin \
+DOCFORM_S3_FORCE_PATH_STYLE=true \
+DOCFORM_API_KEY=local-secret \
+pnpm api:docker:prod
+```
+
+In S3 mode, `POST /v1/documents/generate` returns `file_path` as `s3://bucket/key` plus `storage`, `bucket`, `key`, and a presigned `download_url`. CLI and MCP output remain local.
 
 ## Custom Templates
 
@@ -188,6 +277,8 @@ Example `generate_document` input:
 ```
 
 Set `DOCFORM_TEMPLATES_ROOT` or `DOCFORM_OUTPUT_ROOT` when you need custom local paths.
+
+In self-hosted deployments, keep MCP local/stdio and point `DOCFORM_OUTPUT_ROOT` at a folder the user or host process can access.
 
 ### Add DocForm To An MCP Client
 

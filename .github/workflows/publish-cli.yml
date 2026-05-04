@@ -28,7 +28,7 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build CLI package and runtime dependencies
+      - name: Build publishable packages
         run: >
           pnpm
           --filter @docform/core
@@ -36,9 +36,10 @@ jobs:
           --filter @docform/api
           --filter @docform/mcp-server
           --filter @docform/cli
+          --filter @docform/sdk-js
           build
 
-      - name: Publish CLI package and runtime dependencies
+      - name: Publish packages
         run: >
           pnpm -r
           --filter @docform/core
@@ -46,6 +47,7 @@ jobs:
           --filter @docform/api
           --filter @docform/mcp-server
           --filter @docform/cli
+          --filter @docform/sdk-js
           publish --access public --no-git-checks
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

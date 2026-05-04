@@ -134,6 +134,16 @@ curl -X POST http://localhost:3000/v1/documents/generate \
 
 Use `"format": "docx"` to create a Word document through the same endpoint.
 
+For self-hosted use, set `DOCFORM_OUTPUT_ROOT` for generated files and optionally `DOCFORM_API_KEY` to protect REST endpoints:
+
+```bash
+DOCFORM_OUTPUT_ROOT=/data/docform/output \
+DOCFORM_API_KEY=local-secret \
+docform serve --port 3000
+```
+
+When `DOCFORM_API_KEY` is set, call `/v1/*` endpoints with `Authorization: Bearer <key>` or `x-docform-api-key: <key>`. `/health` and `/ready` remain open for runtime checks.
+
 ## Use It With AI Tools
 
 DocForm can also run as a local MCP server. This lets MCP-compatible AI clients ask DocForm to generate documents as tool calls.

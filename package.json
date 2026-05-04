@@ -1,6 +1,6 @@
 {
   "name": "docform",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "private": true,
   "type": "module",
   "license": "Apache-2.0",
@@ -9,6 +9,8 @@
     "api": "pnpm --filter @docform/api dev",
     "api:build": "pnpm --filter @docform/api build",
     "api:docker": "docker compose -f docker-compose.dev.yml up --build",
+    "api:docker:prod": "docker compose -f docker-compose.prod.yml up --build",
+    "api:worker": "pnpm --filter @docform/api worker",
     "build": "pnpm -r build",
     "mcp": "pnpm --filter @docform/mcp-server dev",
     "test": "vitest run",

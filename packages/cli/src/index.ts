@@ -620,6 +620,9 @@ Options:
   --port             API port. Defaults to PORT or 3000.
   --templates-root   Templates directory. Defaults to packages/templates-basic/templates.
   --output-root      Output directory. Defaults to output.
+
+Environment:
+  DOCFORM_OUTPUT_ROOT, DOCFORM_API_KEY, DOCFORM_LOG_REQUESTS
 `);
 }
 

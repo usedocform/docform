@@ -129,6 +129,143 @@ describe("DocForm SDK JS", () => {
     });
   });
 
+  it("sends the configured API key as a bearer token", async () => {
+    const fetchMock = vi.fn(async () => new Response(JSON.stringify({ templates: [] })));
+    const authenticatedClient = createDocFormClient({
+      baseUrl: "http://docform.local",
+      apiKey: "local-secret",
+      fetch: fetchMock
+    });
+
+    await authenticatedClient.listTemplates();
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "http://docform.local/v1/templates",
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          authorization: "Bearer local-secret"
+        })
+      })
+    );
+  });
+
+  it("maps S3 storage metadata from generate responses", async () => {
+    const fetchMock = vi.fn(
+      async () =>
+        new Response(
+          JSON.stringify({
+            document_id: "doc_123",
+            status: "completed",
+            format: "pdf",
+            template: "minimal",
+            file_path: "s3://docform-output/doc_123.pdf",
+            storage: "s3",
+            bucket: "docform-output",
+            key: "doc_123.pdf",
+            download_url: "https://storage.example.com/docform-output/doc_123.pdf?signature=test",
+            stats: {
+              pages: null
+            }
+          })
+        )
+    );
+    const s3Client = createDocFormClient({
+      baseUrl: "http://docform.local",
+      fetch: fetchMock
+    });
+
+    const result = await s3Client.generateDocument({
+      contentMarkdown: "# S3",
+      format: "pdf"
+    });
+
+    expect(result).toMatchObject({
+      documentId: "doc_123",
+      filePath: "s3://docform-output/doc_123.pdf",
+      storage: "s3",
+      bucket: "docform-output",
+      key: "doc_123.pdf",
+      downloadUrl: "https://storage.example.com/docform-output/doc_123.pdf?signature=test"
+    });
+  });
+
+  it("maps queued async generate responses", async () => {
+    const fetchMock = vi.fn(
+      async () =>
+        new Response(
+          JSON.stringify({
+            document_id: "doc_async",
+            status: "queued"
+          }),
+          {
+            status: 202
+          }
+        )
+    );
+    const asyncClient = createDocFormClient({
+      baseUrl: "http://docform.local",
+      fetch: fetchMock
+    });
+
+    const result = await asyncClient.generateDocument({
+      mode: "async",
+      contentMarkdown: "# Async",
+      format: "pdf"
+    });
+
+    expect(result).toEqual({
+      documentId: "doc_async",
+      status: "queued"
+    });
+    expect(fetchMock).toHaveBeenCalledWith(
+      "http://docform.local/v1/documents/generate",
+      expect.objectContaining({
+        body: expect.stringContaining('"mode":"async"')
+      })
+    );
+  });
+
+  it("gets document status", async () => {
+    const fetchMock = vi.fn(
+      async () =>
+        new Response(
+          JSON.stringify({
+            document_id: "doc_async",
+            status: "completed",
+            format: "pdf",
+            template: "minimal",
+            file_path: "s3://docform-output/doc_async.pdf",
+            storage: "s3",
+            bucket: "docform-output",
+            key: "doc_async.pdf",
+            download_url: "https://storage.example.com/docform-output/doc_async.pdf?signature=test",
+            stats: {
+              pages: null
+            }
+          })
+        )
+    );
+    const asyncClient = createDocFormClient({
+      baseUrl: "http://docform.local",
+      fetch: fetchMock
+    });
+
+    const result = await asyncClient.getDocumentStatus("doc_async");
+
+    expect(result).toMatchObject({
+      documentId: "doc_async",
+      status: "completed",
+      filePath: "s3://docform-output/doc_async.pdf",
+      downloadUrl: "https://storage.example.com/docform-output/doc_async.pdf?signature=test"
+    });
+    expect(fetchMock).toHaveBeenCalledWith(
+      "http://docform.local/v1/documents/doc_async",
+      expect.objectContaining({
+        method: "GET"
+      })
+    );
+  });
+
   it("requires baseUrl", () => {
     expect(() => createDocFormClient({ baseUrl: " " })).toThrow(DocFormSdkError);
   });
